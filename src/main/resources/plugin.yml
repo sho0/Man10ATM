@@ -1,0 +1,8 @@
+name: Man10ATM
+version: ${project.version}
+main: red.man10.man10atm.Man10ATM
+softdepend: [Man10MySQLAPI]
+authors: [Sho0]
+description: Man10ATM Plugin
+commands:
+ atm:

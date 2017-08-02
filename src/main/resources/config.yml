@@ -1,0 +1,86 @@
+money:
+  types:
+    '10000':
+      ==: org.bukkit.inventory.ItemStack
+      type: BLAZE_POWDER
+      meta:
+        ==: ItemMeta
+        meta-type: UNSPECIFIC
+        display-name: §e§l§kX§6§lGold§f§lCoin§7§o($10,000)§e§l§kX
+        lore:
+        - §d●§f●§a●§7§l Man10造幣局 / Man10 Breau §d●§f●§a●§f§l
+        - §f§lMan10国により1万円の価値が保証されている
+        - §eATM機能を内蔵したセキュアな新型通貨
+        - '§cBrand New ATM and Transaction Method with a great technique input. '
+        enchants:
+          LURE: 4341
+        ItemFlags:
+        - HIDE_ENCHANTS
+    '100000':
+      ==: org.bukkit.inventory.ItemStack
+      type: INK_SACK
+      damage: 10
+      meta:
+        ==: ItemMeta
+        meta-type: UNSPECIFIC
+        display-name: §e§l§kX§6§lGold§f§lCard§7§o($100,000)§e§l§kX
+        lore:
+        - §d●§f●§a●§7§l Man10造幣局 / Man10 Breau §d●§f●§a●§f§l
+        - §f§lMan10国により10万円の価値が保証されている
+        - §eATM機能を内蔵したセキュアな新型通貨
+        - '§cBrand New ATM and Transaction Method with a great technique input. '
+        enchants:
+          ARROW_INFINITE: 10
+        ItemFlags:
+        - HIDE_ENCHANTS
+    '1000000':
+      ==: org.bukkit.inventory.ItemStack
+      type: INK_SACK
+      damage: 7
+      meta:
+        ==: ItemMeta
+        meta-type: UNSPECIFIC
+        display-name: §f§l§kXX§7§lPlatinum§f§lCard§7§o($1,000,000)§f§l§kXX
+        lore:
+        - §d●§f●§a●§7§l Man10造幣局 / Man10 Breau §d●§f●§a●§f§l
+        - §f§lMan10国により100万円の価値が保証されている
+        - §eATM機能を内蔵したセキュアな新型通貨
+        - '§cBrand New ATM and Transaction Method with a great technique input. '
+        enchants:
+          ARROW_INFINITE: 10
+        ItemFlags:
+        - HIDE_ENCHANTS
+    '10000000':
+      ==: org.bukkit.inventory.ItemStack
+      type: INK_SACK
+      damage: 8
+      meta:
+        ==: ItemMeta
+        meta-type: UNSPECIFIC
+        display-name: §7§l§kXXX§8§lBlack§f§lCard§7§o($10,000,000)§7§l§kXXX
+        lore:
+        - §d●§f●§a●§7§l Man10造幣局 / Man10 Breau §d●§f●§a●§f§l
+        - §f§lMan10国により1000万円の価値が保証されている
+        - §eATM機能を内蔵したセキュアな新型通貨
+        - '§cBrand New ATM and Transaction Method with a great technique input. '
+        enchants:
+          ARROW_INFINITE: 10
+        ItemFlags:
+        - HIDE_ENCHANTS
+    '100000000':
+      ==: org.bukkit.inventory.ItemStack
+      type: INK_SACK
+      damage: 13
+      meta:
+        ==: ItemMeta
+        meta-type: UNSPECIFIC
+        display-name: §f§l§kXXXX§c§lC§6§lr§e§ly§a§ls§b§lt§9§la§d§ll§f§lCard§7§o($100,000,000)§f§l§kXXXX
+        lore:
+        - §d●§f●§a●§7§l Man10造幣局 / Man10 Breau §d●§f●§a●§f§l
+        - §f§lMan10国により1億円の価値が保証されている
+        - §eATM機能を内蔵したセキュアな新型通貨
+        - '§cBrand New ATM and Transaction Method with a great technique input. '
+        enchants:
+          ARROW_INFINITE: 10
+        ItemFlags:
+        - HIDE_ENCHANTS
