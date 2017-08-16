@@ -3,6 +3,7 @@ package red.man10.man10atm;
 import man10vaultapi.vaultapi.Man10Vault;
 import man10vaultapi.vaultapi.VaultAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,16 +12,49 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.MaterialData;
 import org.bukkit.material.Skull;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import red.man10.man10mysqlapi.MySQLAPI;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public final class Man10ATM extends JavaPlugin implements Listener {
+
+    HashMap<Integer,ItemStack> withDrawItemStack = new HashMap<>();
+    Man10ATMAPI api = new Man10ATMAPI();
+
+    String createAtmLogTable = "CREATE TABLE `man10_atm_log` (\n" +
+            "\t`id` INT NULL AUTO_INCREMENT,\n" +
+            "\t`name` VARCHAR(16) NULL DEFAULT '0',\n" +
+            "\t`uuid` VARCHAR(64) NULL DEFAULT '0',\n" +
+            "\t`action` VARCHAR(64) NULL DEFAULT '0',\n" +
+            "\t`ten_thousand` BIGINT NULL DEFAULT '0',\n" +
+            "\t`hundred_thousand` BIGINT NULL DEFAULT '0',\n" +
+            "\t`million` BIGINT NULL DEFAULT '0',\n" +
+            "\t`ten_million` BIGINT NULL DEFAULT '0',\n" +
+            "\t`hundred_million` BIGINT NULL DEFAULT '0',\n" +
+            "\t`value` BIGINT NULL DEFAULT '0',\n" +
+            "\t`world` VARCHAR(64) NULL DEFAULT '0',\n" +
+            "\t`x` DOUBLE NULL DEFAULT '0',\n" +
+            "\t`y` DOUBLE NULL DEFAULT '0',\n" +
+            "\t`z` DOUBLE NULL DEFAULT '0',\n" +
+            "\t`pitch` DOUBLE NULL DEFAULT '0',\n" +
+            "\t`yaw` DOUBLE NULL DEFAULT '0',\n" +
+            "\t`date_time` DATETIME NULL DEFAULT NULL,\n" +
+            "\t`time` BIGINT NULL DEFAULT '0',\n" +
+            "\t PRIMARY KEY (`id`)\n" +
+            ")\n" +
+            "COLLATE='utf8_general_ci'\n" +
+            "ENGINE=InnoDB\n" +
+            ";\n";
 
     private MenuFunctions menuFunctions = null;
     @Override
@@ -30,17 +64,41 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         this.saveDefaultConfig();
         menuFunctions = new MenuFunctions(this);
         vault = new VaultAPI();
+        mysql = new MySQLAPI(this,"man10ATM");
+        mysql.execute(createAtmLogTable);
         boot();
     }
 
+    static HashMap<Integer,Double> withdrawPrice = new HashMap<>();
+
     VaultAPI vault = null;
+    MySQLAPI mysql = null;
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        for(Player pp : Bukkit.getOnlinePlayers()){
+            if(menu.containsKey(pp.getUniqueId())){
+                pp.closeInventory();
+            }
+        }
     }
 
-    String prefix = "§e§l[§1§lMan10ATM§e§l]§f§l";
+    String prefix = "§e§l[§1Man10ATM§e§l]§f§l";
+
+    void createAtmLog(String name, UUID uuid, String action, long tenThousand, long hundredThousand, long million, long tenMillion, long hundredMillion, Location l){
+        long value = (tenThousand * 10000) + (hundredThousand * 100000) + (million * 1000000) + (tenMillion * 10000000) + (hundredMillion * 100000000);
+        if(value == 0){
+            return;
+        }
+        mysql.execute("INSERT INTO man10_atm_log VALUES('0','" + name + "','" + uuid +"','" + action + "','" + tenThousand + "','" + hundredThousand + "','" + million +"','" + tenMillion + "','" + hundredMillion + "','" + value + "','" + l.getWorld().getName() + "','" + l.getX() + "','" + l.getY() + "','" + l.getZ() + "','" + l.getPitch() + "','" + l.getYaw() + "','" +  currentTimeNoBracket() + "','" + System.currentTimeMillis()/1000 + "');");
+    }
+    public String currentTimeNoBracket(){
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
+        Bukkit.getLogger().info("datetime ");
+        return sdf.format(date);
+    }
 
     void boot(){
         Set<String> keys = getConfig().getConfigurationSection("money.types").getKeys(false);
@@ -53,42 +111,17 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         }
         for(int i = 0;i < priceItem.keySet().size();i++){
             itemMeta.put(priceItem.get(prices.get(i)).getItemMeta(),prices.get(i));
+            api.itemMeta.put(priceItem.get(prices.get(i)).getItemMeta(),prices.get(i));
         }
-
-        menuFunctions.tenKeyNum.put(46,0);
-        menuFunctions.tenKeyNum.put(37,1);
-        menuFunctions.tenKeyNum.put(38,2);
-        menuFunctions.tenKeyNum.put(39,3);
-        menuFunctions.tenKeyNum.put(28,4);
-        menuFunctions.tenKeyNum.put(29,5);
-        menuFunctions.tenKeyNum.put(30,6);
-        menuFunctions.tenKeyNum.put(19,7);
-        menuFunctions.tenKeyNum.put(20,8);
-        menuFunctions.tenKeyNum.put(21,9);
-        ItemStack i0 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/0ebe7e5215169a699acc6cefa7b73fdb108db87bb6dae2849fbe24714b27").build();
-        ItemStack i1 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/71bc2bcfb2bd3759e6b1e86fc7a79585e1127dd357fc202893f9de241bc9e530").build();
-        ItemStack i2 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/4cd9eeee883468881d83848a46bf3012485c23f75753b8fbe8487341419847").build();
-        ItemStack i3 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/1d4eae13933860a6df5e8e955693b95a8c3b15c36b8b587532ac0996bc37e5").build();
-        ItemStack i4 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/d2e78fb22424232dc27b81fbcb47fd24c1acf76098753f2d9c28598287db5").build();
-        ItemStack i5 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/6d57e3bc88a65730e31a14e3f41e038a5ecf0891a6c243643b8e5476ae2").build();
-        ItemStack i6 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/334b36de7d679b8bbc725499adaef24dc518f5ae23e716981e1dcc6b2720ab").build();
-        ItemStack i7 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/6db6eb25d1faabe30cf444dc633b5832475e38096b7e2402a3ec476dd7b9").build();
-        ItemStack i8 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/59194973a3f17bda9978ed6273383997222774b454386c8319c04f1f4f74c2b5").build();
-        ItemStack i9 = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/e67caf7591b38e125a8017d58cfc6433bfaf84cd499d794f41d10bff2e5b840").build();
-        ItemStack dot = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/733aa24916c88696ee71db7ac8cd306ad73096b5b6ffd868e1c384b1d62cfb3c").build();
-        ItemStack e = new SkullMaker().withSkinUrl("http://textures.minecraft.net/texture/dbb2737ecbf910efe3b267db7d4b327f360abc732c77bd0e4eff1d510cdef").build();
-        menuFunctions.itemHead.put("0".charAt(0),i0);
-        menuFunctions.itemHead.put("1".charAt(0),i1);
-        menuFunctions.itemHead.put("2".charAt(0),i2);
-        menuFunctions.itemHead.put("3".charAt(0),i3);
-        menuFunctions.itemHead.put("4".charAt(0),i4);
-        menuFunctions.itemHead.put("5".charAt(0),i5);
-        menuFunctions.itemHead.put("6".charAt(0),i6);
-        menuFunctions.itemHead.put("7".charAt(0),i7);
-        menuFunctions.itemHead.put("8".charAt(0),i8);
-        menuFunctions.itemHead.put("9".charAt(0),i9);
-        menuFunctions.itemHead.put(".".charAt(0),dot);
-        menuFunctions.itemHead.put("E".charAt(0),e);
+        for(int i = 0;i < prices.size();i++){
+            withDrawItemStack.put(i + 11,priceItem.get(prices.get(i)));
+        }
+        withdrawPrice.put(11,prices.get(0));
+        withdrawPrice.put(12,prices.get(1));
+        withdrawPrice.put(13,prices.get(2));
+        withdrawPrice.put(14,prices.get(3));
+        withdrawPrice.put(15,prices.get(4));
+        withdrawPrice.put(15,prices.get(4));
     }
 
     List<Double> prices = new ArrayList<>();
@@ -97,13 +130,26 @@ public final class Man10ATM extends JavaPlugin implements Listener {
     HashMap<Double,ItemStack> priceItem = new HashMap<>();
     HashMap<UUID,String> menu = new HashMap<>();
     HashMap<UUID,Double> calcPrice = new HashMap<>();
-    HashMap<UUID,ATMSetting> atmSettings = new HashMap<>();
 
+    HashMap<UUID,ATMLog> atmLog = new HashMap<>();
 
+    ArrayList<UUID> inDeposit = new ArrayList<>();
+
+    boolean locked = false;
+
+    ItemStack priceItemGetItem(Double d ){
+        return priceItem.get(d);
+    }
     @EventHandler
     public void onClick(InventoryClickEvent e){
-        Bukkit.broadcastMessage(menu.get(e.getWhoClicked().getUniqueId()));
         if(menu.isEmpty()){
+            return;
+        }
+        if(menu.get(e.getWhoClicked().getUniqueId()).equals("deposit")){
+            menuFunctions.depositInventoryFunction(e);
+            return;
+        }
+        if(e.getInventory() == null || e.getCurrentItem() == null){
             return;
         }
         if(e.getEventName().equalsIgnoreCase("InventoryCreativeEvent")){
@@ -117,19 +163,12 @@ public final class Man10ATM extends JavaPlugin implements Listener {
             menuFunctions.mainMenuFunction(e);
             return;
         }
-        if(menu.get(e.getWhoClicked().getUniqueId()).equals("deposit")){
-            menuFunctions.depositInventoryFunction(e);
-            return;
-        }
         if(menu.get(e.getWhoClicked().getUniqueId()).equals("withdraw")){
             menuFunctions.withDrawMenuFunction(e);
             return;
         }
-        if(menu.get(e.getWhoClicked().getUniqueId()).equals("currency")){
-            menuFunctions.currencySettingFunction(e);
-            return;
-        }
     }
+
 
     @EventHandler
     public void onClose(InventoryCloseEvent e){
@@ -139,18 +178,50 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         if(!menu.containsKey(e.getPlayer().getUniqueId())){
             return;
         }
+        if(menu.get(e.getPlayer().getUniqueId()).equals("withdraw")){
+            ATMLog atm = atmLog.get(e.getPlayer().getUniqueId());
+            createAtmLog(e.getPlayer().getName(),e.getPlayer().getUniqueId(),"Withdraw",atm.tenThousand,atm.hundredThousand,atm.million,atm.tenMillion,atm.hundredMillion,e.getPlayer().getLocation());
+            e.getPlayer().sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(e.getPlayer().getUniqueId()) + "円です");
+            e.getPlayer().sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(e.getPlayer().getUniqueId())) + ")");
+        }
         if(menu.get(e.getPlayer().getUniqueId()).equals("deposit")){
             if(e.getInventory().getContents().length != 0) {
                 double d = 0;
                 for (int ii = 0; ii < e.getInventory().getContents().length; ii++) {
                     if (e.getInventory().getContents()[ii] != null && itemMeta.get(e.getInventory().getContents()[ii].getItemMeta()) != null) {
                         d = d + itemMeta.get(e.getInventory().getContents()[ii].getItemMeta()) * e.getInventory().getContents()[ii].getAmount();
+                        Double s =  itemMeta.get(e.getInventory().getContents()[ii].getItemMeta());
+                        ATMLog atm = atmLog.get(e.getPlayer().getUniqueId());
+                        if(s == 10000){
+                            atm.tenThousand = atm.tenThousand + e.getInventory().getContents()[ii].getAmount();
+                            atmLog.put(e.getPlayer().getUniqueId(),atm);
+                        }else if(s == 100000){
+                            atm.hundredThousand = atm.hundredThousand + e.getInventory().getContents()[ii].getAmount();
+                            atmLog.put(e.getPlayer().getUniqueId(),atm);
+                        }else if(s == 1000000){
+                            atm.million = atm.million + e.getInventory().getContents()[ii].getAmount();
+                            atmLog.put(e.getPlayer().getUniqueId(),atm);
+                        }else if(s == 10000000){
+                            atm.tenMillion = atm.tenMillion + e.getInventory().getContents()[ii].getAmount();
+                            atmLog.put(e.getPlayer().getUniqueId(),atm);
+                        }else if(s == 100000000){
+                            atm.hundredMillion = atm.hundredMillion + e.getInventory().getContents()[ii].getAmount();
+                            atmLog.put(e.getPlayer().getUniqueId(),atm);
+                        }
                     }
                 }
-                e.getPlayer().sendMessage(prefix + d + "円振り込みました。");
+                if(d == 0){
+                    return;
+                }
                 vault.silentDeposit(e.getPlayer().getUniqueId(),d);
+                e.getPlayer().sendMessage(prefix + d + "円振り込みました。");
+                e.getPlayer().sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(e.getPlayer().getUniqueId()) + "円です");
+                e.getPlayer().sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(e.getPlayer().getUniqueId())) + ")");
+                ATMLog atm = atmLog.get(e.getPlayer().getUniqueId());
+                createAtmLog(e.getPlayer().getName(),e.getPlayer().getUniqueId(),"Deposit",atm.tenThousand,atm.hundredThousand,atm.million,atm.tenMillion,atm.hundredMillion,e.getPlayer().getLocation());
             }
         }
+        atmLog.remove(e.getPlayer().getUniqueId());
         calcPrice.remove(e.getPlayer().getUniqueId());
         menu.remove(e.getPlayer().getUniqueId());
     }
@@ -161,12 +232,46 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         if (command.getName().equalsIgnoreCase("atm")) {
             Player p = (Player) sender;
             if(args.length == 0){
+                if(!p.hasPermission("man10.atm")){
+                    p.sendMessage(prefix + "あなたには権限がありません");
+                    return false;
+                }
+                if(locked){
+                    p.sendMessage(prefix + "ATMはロックされています");
+                    return false;
+                }
+                p.sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(p.getUniqueId()) + "円です");
+                p.sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(p.getUniqueId())) + ")");
                 menu.put(p.getUniqueId(),"main");
                 p.openInventory(createMainMenu());
             }
-            if (args.length == 1) {
-                if (args[0].equalsIgnoreCase("setting")) {
-                    p.openInventory(preivew());
+            if(args.length == 1){
+                if(args[0].equals("lock")){
+                    if(!sender.hasPermission("man10.atm.lock")){
+                        sender.sendMessage(prefix + "あなたには権限がありません");
+                        return false;
+                    }
+                    if(locked){
+                        locked = false;
+                        sender.sendMessage(prefix + "ATMのロックを解除しました");
+                        return false;
+                    }
+                    locked = true;
+                    sender.sendMessage(prefix + "ATMをロックしました");
+                    for(Player pp : Bukkit.getOnlinePlayers()){
+                        if(menu.containsKey(pp.getUniqueId())){
+                            pp.closeInventory();
+                        }
+                    }
+                    return false;
+                }
+                if(args[0].equals("help")){
+                    sender.sendMessage("§f§l==========" + prefix + "==========");
+                    sender.sendMessage("§1/atm atmを開く");
+                    sender.sendMessage("§1/atm help atmのコマンド一覧を見る");
+                    sender.sendMessage("§1/atm lock atmをロックする");
+                    sender.sendMessage("§l============================");
+                    sender.sendMessage("§d§lCreated By Sho0");
                 }
             }
         }
