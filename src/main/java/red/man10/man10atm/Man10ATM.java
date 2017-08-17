@@ -10,6 +10,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.*;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -23,6 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import red.man10.man10mysqlapi.MySQLAPI;
 
+import javax.swing.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -32,7 +35,7 @@ public final class Man10ATM extends JavaPlugin implements Listener {
     Man10ATMAPI api = new Man10ATMAPI();
 
     String createAtmLogTable = "CREATE TABLE `man10_atm_log` (\n" +
-            "\t`id` INT NULL AUTO_INCREMENT,\n" +
+            "\t`id` INT NOT NULL AUTO_INCREMENT,\n" +
             "\t`name` VARCHAR(16) NULL DEFAULT '0',\n" +
             "\t`uuid` VARCHAR(64) NULL DEFAULT '0',\n" +
             "\t`action` VARCHAR(64) NULL DEFAULT '0',\n" +
@@ -140,6 +143,21 @@ public final class Man10ATM extends JavaPlugin implements Listener {
     ItemStack priceItemGetItem(Double d ){
         return priceItem.get(d);
     }
+
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent e){
+        if(e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK){
+            if(e.getPlayer().getInventory().getItemInMainHand().getItemMeta() != null){
+                if(itemMeta.get(e.getItem().getItemMeta()) != null){
+                    if(e.getPlayer().hasPermission("man10.atm.item")){
+                        Bukkit.dispatchCommand(e.getPlayer(),"atm");
+                    }
+                }
+            }
+        }
+    }
+
     @EventHandler
     public void onClick(InventoryClickEvent e){
         if(menu.isEmpty()){
@@ -214,7 +232,7 @@ public final class Man10ATM extends JavaPlugin implements Listener {
                     return;
                 }
                 vault.silentDeposit(e.getPlayer().getUniqueId(),d);
-                e.getPlayer().sendMessage(prefix + d + "円振り込みました。");
+                e.getPlayer().sendMessage(prefix + menuFunctions.jpnBalForm((long)d)+ "円振り込みました。");
                 e.getPlayer().sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(e.getPlayer().getUniqueId()) + "円です");
                 e.getPlayer().sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(e.getPlayer().getUniqueId())) + ")");
                 ATMLog atm = atmLog.get(e.getPlayer().getUniqueId());
@@ -267,10 +285,10 @@ public final class Man10ATM extends JavaPlugin implements Listener {
                 }
                 if(args[0].equals("help")){
                     sender.sendMessage("§f§l==========" + prefix + "==========");
-                    sender.sendMessage("§1/atm atmを開く");
-                    sender.sendMessage("§1/atm help atmのコマンド一覧を見る");
-                    sender.sendMessage("§1/atm lock atmをロックする");
-                    sender.sendMessage("§l============================");
+                    sender.sendMessage("§b/atm atmを開く");
+                    sender.sendMessage("§b/atm help atmのコマンド一覧を見る");
+                    sender.sendMessage("§b/atm lock atmをロックする");
+                    sender.sendMessage("§f============================");
                     sender.sendMessage("§d§lCreated By Sho0");
                 }
             }

@@ -63,11 +63,18 @@ public class MenuFunctions {
         }
         for(int i = 0;i < 5;i++){
             ItemStack item = inv.getItem(i + 11);
+            ItemStack loreItem = plugin.priceItem.get(plugin.withdrawPrice.get(i + 11));
+            ItemMeta loreItemMeta = loreItem.getItemMeta();
             ItemMeta itemMeta1 = item.getItemMeta();
-            List<String> lore = itemMeta1.getLore();
+            List<String> lore = loreItemMeta.getLore();
             lore.add("§d§l===================================");
-            lore.add("§e§l現在の所持金        :" + jpnBalForm((long) plugin.vault.getBalance(uuid)) + "円");
-            lore.add("§e§lお引き出し後の所持金:" + jpnBalForm((long) ((long) plugin.vault.getBalance(uuid) - plugin.itemMeta.get(item.getItemMeta()))) + "円");
+            long val = (long) (plugin.vault.getBalance(uuid) - plugin.withdrawPrice.get(i + 11));
+            if(val < 0){
+                lore.add("§c§l§n所持金が足りないためお引き出しできません");
+            }else{
+                lore.add("§e§l現在の所持金        :" + jpnBalForm((long) plugin.vault.getBalance(uuid)) + "円");
+                lore.add("§e§lお引き出し後の所持金:" + jpnBalForm(val)  + "円");
+            }
             itemMeta1.setLore(lore);
             item.setItemMeta(itemMeta1);
         }
