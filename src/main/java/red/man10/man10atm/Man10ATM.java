@@ -1,7 +1,5 @@
 package red.man10.man10atm;
 
-import man10vaultapi.vaultapi.Man10Vault;
-import man10vaultapi.vaultapi.VaultAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +22,8 @@ import org.bukkit.material.Skull;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import red.man10.man10mysqlapi.MySQLAPI;
+import red.man10.man10vaultapiplus.Man10VaultAPI;
+import red.man10.man10vaultapiplus.enums.TransactionType;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
@@ -66,15 +66,16 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         Bukkit.getServer().getPluginManager().registerEvents(this,this);
         this.saveDefaultConfig();
         menuFunctions = new MenuFunctions(this);
-        vault = new VaultAPI();
+        vault = new Man10VaultAPI("Man10ATM");
         mysql = new MySQLAPI(this,"man10ATM");
         mysql.execute(createAtmLogTable);
         boot();
     }
 
+    HashMap<UUID,Long> cancel = new HashMap<>();
     static HashMap<Integer,Double> withdrawPrice = new HashMap<>();
 
-    VaultAPI vault = null;
+    Man10VaultAPI vault = null;
     MySQLAPI mysql = null;
 
     @Override
@@ -82,6 +83,13 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         for(Player pp : Bukkit.getOnlinePlayers()){
             if(menu.containsKey(pp.getUniqueId())){
+                long price = getInvPrice(pp.getOpenInventory().getTopInventory(),pp.getUniqueId());
+                vault.givePlayerMoney(pp.getUniqueId(), price, TransactionType.DEPOSIT, "Server ShutDown AutoPay In Menu");
+                pp.sendMessage(prefix + menuFunctions.jpnBalForm(price)+ "円預入れました。");
+                pp.sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(pp.getUniqueId()) + "円です");
+                pp.sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(pp.getUniqueId())) + ")");
+                ATMLog atm = atmLog.get(pp.getUniqueId());
+                createAtmLog(pp.getName(),pp.getUniqueId(),"Deposit",atm.tenThousand,atm.hundredThousand,atm.million,atm.tenMillion,atm.hundredMillion,pp.getLocation());
                 pp.closeInventory();
             }
         }
@@ -144,17 +152,51 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         return priceItem.get(d);
     }
 
-
-    @EventHandler
-    public void onInteract(PlayerInteractEvent e){
-        if(e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK){
-            if(e.getPlayer().getInventory().getItemInMainHand().getItemMeta() != null){
-                if(itemMeta.get(e.getItem().getItemMeta()) != null){
-                    if(e.getPlayer().hasPermission("man10.atm.item")){
-                        Bukkit.dispatchCommand(e.getPlayer(),"atm");
+    public long getInvPrice(Inventory inv,UUID uuid){
+        double d = 0;
+        if(inv.getContents().length != 0) {
+            for (int ii = 0; ii < inv.getContents().length; ii++) {
+                if (inv.getContents()[ii] != null && itemMeta.get(inv.getContents()[ii].getItemMeta()) != null) {
+                    d = d + itemMeta.get(inv.getContents()[ii].getItemMeta()) * inv.getContents()[ii].getAmount();
+                    Double s = itemMeta.get(inv.getContents()[ii].getItemMeta());
+                    ATMLog atm = atmLog.get(uuid);
+                    if (s == 10000) {
+                        atm.tenThousand = atm.tenThousand + inv.getContents()[ii].getAmount();
+                        atmLog.put(uuid, atm);
+                    } else if (s == 100000) {
+                        atm.hundredThousand = atm.hundredThousand + inv.getContents()[ii].getAmount();
+                        atmLog.put(uuid, atm);
+                    } else if (s == 1000000) {
+                        atm.million = atm.million + inv.getContents()[ii].getAmount();
+                        atmLog.put(uuid, atm);
+                    } else if (s == 10000000) {
+                        atm.tenMillion = atm.tenMillion + inv.getContents()[ii].getAmount();
+                        atmLog.put(uuid, atm);
+                    } else if (s == 100000000) {
+                        atm.hundredMillion = atm.hundredMillion + inv.getContents()[ii].getAmount();
+                        atmLog.put(uuid, atm);
                     }
                 }
             }
+        }
+        return (long) d;
+    }
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent e){
+        try {
+            if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                if (e.getPlayer().getInventory().getItemInMainHand().getItemMeta() != null) {
+                    if (itemMeta.get(e.getItem().getItemMeta()) != null) {
+                        if (e.getPlayer().hasPermission("man10.atm.item")) {
+                            Bukkit.dispatchCommand(e.getPlayer(), "atm");
+                        }
+                    } else {
+                    }
+                } else {
+                }
+            }
+        }catch (NullPointerException ee){
         }
     }
 
@@ -229,10 +271,13 @@ public final class Man10ATM extends JavaPlugin implements Listener {
                     }
                 }
                 if(d == 0){
+                    atmLog.remove(e.getPlayer().getUniqueId());
+                    calcPrice.remove(e.getPlayer().getUniqueId());
+                    menu.remove(e.getPlayer().getUniqueId());
                     return;
                 }
-                vault.silentDeposit(e.getPlayer().getUniqueId(),d);
-                e.getPlayer().sendMessage(prefix + menuFunctions.jpnBalForm((long)d)+ "円振り込みました。");
+                vault.givePlayerMoney(e.getPlayer().getUniqueId(), d, TransactionType.DEPOSIT, "Normal Deposit");
+                e.getPlayer().sendMessage(prefix + menuFunctions.jpnBalForm((long)d)+ "円預入れました。");
                 e.getPlayer().sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(e.getPlayer().getUniqueId()) + "円です");
                 e.getPlayer().sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(e.getPlayer().getUniqueId())) + ")");
                 ATMLog atm = atmLog.get(e.getPlayer().getUniqueId());
@@ -258,6 +303,7 @@ public final class Man10ATM extends JavaPlugin implements Listener {
                     p.sendMessage(prefix + "ATMはロックされています");
                     return false;
                 }
+                ((Player) sender).closeInventory();
                 p.sendMessage(prefix + "現在の所持金は" + (long) vault.getBalance(p.getUniqueId()) + "円です");
                 p.sendMessage(prefix + "              (" + menuFunctions.jpnBalForm((long) vault.getBalance(p.getUniqueId())) + ")");
                 menu.put(p.getUniqueId(),"main");

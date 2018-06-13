@@ -8,6 +8,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import red.man10.man10vaultapiplus.enums.TransactionType;
 
 import java.util.*;
 
@@ -28,10 +29,18 @@ public class MenuFunctions {
         int[] withDraw = {14, 15, 16};
         for (int i = 0; i < deposit.length; i++) {
             if (e.getSlot() == deposit[i]) {
+                if(!e.getWhoClicked().hasPermission("man10.atm.deposit")){
+                    e.getWhoClicked().sendMessage(plugin.prefix + "現在は使用できません");
+                    return;
+                }
                 e.getWhoClicked().openInventory(depositInventory());
                 plugin.menu.put(e.getWhoClicked().getUniqueId(), "deposit");
                 plugin.atmLog.put(e.getWhoClicked().getUniqueId(),new ATMLog());
             } else if (e.getSlot() == withDraw[i]) {
+                if(!e.getWhoClicked().hasPermission("man10.atm.withdraw")){
+                    e.getWhoClicked().sendMessage(plugin.prefix + "現在は使用できません");
+                    return;
+                }
                 e.getWhoClicked().openInventory(withDrawInventory(e.getWhoClicked().getUniqueId()));
                 plugin.menu.put(e.getWhoClicked().getUniqueId(), "withdraw");
                 plugin.atmLog.put(e.getWhoClicked().getUniqueId(),new ATMLog());
@@ -100,12 +109,12 @@ public class MenuFunctions {
             }
             if(e.getWhoClicked().getInventory().firstEmpty() == -1){
                 if(full(e.getWhoClicked().getInventory(),e.getCurrentItem().getItemMeta())){
-                e.getWhoClicked().sendMessage(plugin.prefix + "スペースが足りません");
-                return;
+                    e.getWhoClicked().sendMessage(plugin.prefix + "スペースが足りません");
+                    return;
                 }
             }
             ATMLog atm = plugin.atmLog.get(e.getWhoClicked().getUniqueId());
-            plugin.vault.silentWithdraw(e.getWhoClicked().getUniqueId(),required);
+            plugin.vault.takePlayerMoney(e.getWhoClicked().getUniqueId(), required, TransactionType.WITHDRAW, "Normal Withdraw");
             e.getWhoClicked().getInventory().addItem(plugin.priceItem.get(plugin.withdrawPrice.get(e.getSlot())));
             Inventory inv = e.getInventory();
             UUID uuid = e.getWhoClicked().getUniqueId();
