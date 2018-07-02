@@ -202,7 +202,13 @@ public final class Man10ATM extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent e){
+        if(e == null){
+            return;
+        }
         if(menu.isEmpty()){
+            return;
+        }
+        if(menu.containsKey(e.getWhoClicked().getUniqueId()) == false){
             return;
         }
         if(menu.get(e.getWhoClicked().getUniqueId()).equals("deposit")){
