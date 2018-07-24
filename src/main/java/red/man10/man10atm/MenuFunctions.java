@@ -114,7 +114,13 @@ public class MenuFunctions {
                 }
             }
             ATMLog atm = plugin.atmLog.get(e.getWhoClicked().getUniqueId());
+            double firstBal = plugin.vault.getBalance(e.getWhoClicked().getUniqueId());
             plugin.vault.takePlayerMoney(e.getWhoClicked().getUniqueId(), required, TransactionType.WITHDRAW, "Normal Withdraw");
+            double nextBal = plugin.vault.getBalance(e.getWhoClicked().getUniqueId());
+            if(firstBal == nextBal){
+                e.getWhoClicked().sendMessage(plugin.prefix + "エラーが発生しました");
+                return;
+            }
             e.getWhoClicked().getInventory().addItem(plugin.priceItem.get(plugin.withdrawPrice.get(e.getSlot())));
             Inventory inv = e.getInventory();
             UUID uuid = e.getWhoClicked().getUniqueId();

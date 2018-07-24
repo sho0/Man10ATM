@@ -208,7 +208,7 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         if(menu.isEmpty()){
             return;
         }
-        if(menu.containsKey(e.getWhoClicked().getUniqueId()) == false){
+        if(!menu.containsKey(e.getWhoClicked().getUniqueId())){
             return;
         }
         if(menu.get(e.getWhoClicked().getUniqueId()).equals("deposit")){
