@@ -205,6 +205,12 @@ public final class Man10ATM extends JavaPlugin implements Listener {
         if(menu.isEmpty()){
             return;
         }
+        if(!menu.containsKey(e.getWhoClicked().getUniqueId())){
+            return;
+        }
+        if(e.getRawSlot() == -999){
+            return;
+        }
         if(menu.get(e.getWhoClicked().getUniqueId()).equals("deposit")){
             menuFunctions.depositInventoryFunction(e);
             return;
@@ -213,9 +219,6 @@ public final class Man10ATM extends JavaPlugin implements Listener {
             return;
         }
         if(e.getEventName().equalsIgnoreCase("InventoryCreativeEvent")){
-            return;
-        }
-        if(!menu.containsKey(e.getWhoClicked().getUniqueId())){
             return;
         }
         if(menu.get(e.getWhoClicked().getUniqueId()).equals("main")){
